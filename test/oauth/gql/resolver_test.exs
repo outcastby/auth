@@ -3,6 +3,24 @@ defmodule Oauth.ResolverTest do
   import Mock
   require IEx
 
+  @google_user %{
+    "at_hash" => "uWqRMhqrHfbOW7yUHZ5joA",
+    "aud" => "google_app_id",
+    "azp" => "google_app_id",
+    "email" => "test@gmail.com",
+    "email_verified" => true,
+    "exp" => 1_558_455_010,
+    "family_name" => "Test",
+    "given_name" => "User",
+    "iat" => 1_558_451_410,
+    "iss" => "accounts.google.com",
+    "jti" => "123456",
+    "locale" => "ru",
+    "name" => "Test User",
+    "picture" => "https://photo.jpg",
+    "sub" => "123456789"
+  }
+
   setup_with_mocks([
     {Ecto, [:passthrough], [build_assoc: fn _, _, _ -> %TestAuthorization{} end]},
     {DateTime, [:passthrough], [utc_now: fn -> Ext.Utils.Date.from("2018-12-03T08:00:00.000000Z") end]},
@@ -29,7 +47,7 @@ defmodule Oauth.ResolverTest do
          {:ok,
           %{
             "data" => %{
-              "app_id" => "318194805744990",
+              "app_id" => "facebook_app_id",
               "application" => "Truly Social Games",
               "data_access_expires_at" => 1_566_893_721,
               "expires_at" => 1_559_124_000,
@@ -68,7 +86,8 @@ defmodule Oauth.ResolverTest do
             ]
           }}
        end
-     ]}
+     ]},
+    {Joken, [:passthrough], [verify: fn _, _ -> {:ok, @google_user} end, peek_claims: fn _ -> {:ok, @google_user} end]}
   ]) do
     google_args = %{
       payload: %{
@@ -88,9 +107,7 @@ defmodule Oauth.ResolverTest do
 
   describe "google auth" do
     test "new user", %{google_args: google_args} do
-      with_mock(TestRepo, [:passthrough],
-        get_or_insert!: fn _, _, _ -> %TestUser{id: 1, email: "miheykrug@gmail.com"} end
-      ) do
+      with_mock(TestRepo, [:passthrough], get_or_insert!: fn _, _, _ -> %TestUser{id: 1, email: "test@gmail.com"} end) do
         {:ok, user} =
           Oauth.Resolver.authorize(%{
             repo: TestRepo,
@@ -99,30 +116,30 @@ defmodule Oauth.ResolverTest do
           }).(google_args, %{})
 
         assert called(
-                 TestRepo.get_or_insert!(TestUser, %{email: "miheykrug@gmail.com"}, %{
-                   email: "miheykrug@gmail.com"
+                 TestRepo.get_or_insert!(TestUser, %{email: "test@gmail.com"}, %{
+                   email: "test@gmail.com"
                  })
                )
 
         assert called(
-                 Ecto.build_assoc(%TestUser{email: "miheykrug@gmail.com", id: 1}, :test_authorizations, %{
+                 Ecto.build_assoc(%TestUser{email: "test@gmail.com", id: 1}, :test_authorizations, %{
                    provider: :google,
-                   uid: "113127359282673396341"
+                   uid: "123456789"
                  })
                )
 
-        assert user.email == "miheykrug@gmail.com"
+        assert user.email == "test@gmail.com"
       end
     end
 
     test "existing user", %{google_args: google_args} do
       with_mock(TestRepo, [:passthrough],
-        get_by: fn _, _ -> %TestAuthorization{provider: :google, uid: "113127359282673396341"} end,
+        get_by: fn _, _ -> %TestAuthorization{provider: :google, uid: "123456789"} end,
         preload: fn _, _ ->
           %TestAuthorization{
             provider: :google,
-            uid: "113127359282673396341",
-            test_user: %TestUser{id: 1, email: "miheykrug@gmail.com"}
+            uid: "123456789",
+            test_user: %TestUser{id: 1, email: "test@gmail.com"}
           }
         end
       ) do
@@ -135,7 +152,7 @@ defmodule Oauth.ResolverTest do
 
         refute called(TestRepo.get_or_insert!(:_, :_, :_))
         refute called(Ecto.build_assoc(:_, :_, :_))
-        assert user.email == "miheykrug@gmail.com"
+        assert user.email == "test@gmail.com"
       end
     end
   end

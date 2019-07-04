@@ -1,5 +1,6 @@
 use Mix.Config
 
-config :oauth, :oauth,
-  google_client_id: System.get_env("GOOGLE_CLIENT_ID"),
-  facebook_client_id: System.get_env("FACEBOOK_CLIENT_ID")
+case Mix.env() do
+  :test -> import_config "test.exs"
+  :dev -> import_config "dev.exs"
+end
