@@ -23,7 +23,7 @@ defmodule Oauth.ResolverTest do
 
   setup_with_mocks([
     {Ecto, [:passthrough], [build_assoc: fn _, _, _ -> %TestAuthorization{} end]},
-    {DateTime, [:passthrough], [utc_now: fn -> Ext.Utils.Date.from("2018-12-03T08:00:00.000000Z") end]},
+    {DateTime, [:passthrough], [utc_now: fn -> Ext.Utils.DateTime.from("2018-12-03T08:00:00.000000Z") end]},
     {Oauth.Sdk.Facebook.Client, [:passthrough],
      [
        me: fn

@@ -3,7 +3,7 @@ defmodule Oauth.Facebook.GetAppAccessToken do
   require IEx
 
   def call do
-    request = %Ext.Sdk.Request{
+    request = %Sdk.Request{
       payload: %{
         client_id: Application.get_env(Mix.Project.config()[:app], :oauth)[:facebook_client_id],
         client_secret: Application.get_env(Mix.Project.config()[:app], :oauth)[:facebook_client_secret],

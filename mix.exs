@@ -25,6 +25,7 @@ defmodule Oauth.MixProject do
     [
       {:mock, "0.3.3", only: :test},
       {:ext, git: "https://github.com/outcastby/ext.git"},
+      {:sdk, git: "https://github.com/outcastby/sdk"},
       {:joken, "~> 2.0"},
       {:extwitter, "~> 0.8"},
       {:ecto_enum, "~> 1.0"}

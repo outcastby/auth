@@ -3,7 +3,7 @@ defmodule Oauth.Facebook.GetUserDetails do
   require IEx
 
   def call(%{access_token: access_token}) do
-    request = %Ext.Sdk.Request{
+    request = %Sdk.Request{
       payload: %{fields: "id,email,first_name,last_name,name", access_token: access_token}
     }
 
