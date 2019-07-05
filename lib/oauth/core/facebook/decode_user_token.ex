@@ -5,7 +5,7 @@ defmodule Oauth.Facebook.DecodeUserToken do
   def call(user_token) do
     app_token = Oauth.Facebook.GetAppAccessToken.call()
 
-    request = %Ext.Sdk.Request{
+    request = %Sdk.Request{
       payload: %{
         input_token: user_token,
         access_token: app_token
