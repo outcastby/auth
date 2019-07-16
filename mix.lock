@@ -42,7 +42,7 @@
   "proper_case": {:hex, :proper_case, "1.0.2", "f80027bed740ae74cdce355c2ed7b4d1c6a5df923b2cfdef68ad3937067f0d87", [:mix], [], "hexpm"},
   "ranch": {:hex, :ranch, "1.7.1", "6b1fab51b49196860b733a49c07604465a47bdb78aa10c1c16a3d199f7f8c881", [:rebar3], [], "hexpm"},
   "rollbax": {:hex, :rollbax, "0.10.0", "f4f5578767cedd272548d12fa7b14335938ef321e677fc3497d4bd725a193316", [:mix], [{:hackney, "~> 1.1", [hex: :hackney, repo: "hexpm", optional: false]}, {:jason, "~> 1.0", [hex: :jason, repo: "hexpm", optional: false]}], "hexpm"},
-  "sdk": {:git, "https://github.com/outcastby/sdk.git", "263893c1f6d9c89a581fc1053ba52e65a8be5357", []},
+  "sdk": {:git, "https://github.com/outcastby/sdk.git", "b66b226acab1a5113a76b79237b24072f2da9350", []},
   "ssl_verify_fun": {:hex, :ssl_verify_fun, "1.1.4", "f0eafff810d2041e93f915ef59899c923f4568f4585904d010387ed74988e77b", [:make, :mix, :rebar3], [], "hexpm"},
   "telemetry": {:hex, :telemetry, "0.4.0", "8339bee3fa8b91cb84d14c2935f8ecf399ccd87301ad6da6b71c09553834b2ab", [:rebar3], [], "hexpm"},
   "timex": {:hex, :timex, "3.6.1", "efdf56d0e67a6b956cc57774353b0329c8ab7726766a11547e529357ffdc1d56", [:mix], [{:combine, "~> 0.10", [hex: :combine, repo: "hexpm", optional: false]}, {:gettext, "~> 0.10", [hex: :gettext, repo: "hexpm", optional: false]}, {:tzdata, "~> 0.1.8 or ~> 0.5 or ~> 1.0.0", [hex: :tzdata, repo: "hexpm", optional: false]}], "hexpm"},
