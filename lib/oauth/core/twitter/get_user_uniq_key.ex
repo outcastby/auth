@@ -1,4 +1,4 @@
-defmodule Oauth.Twitter.GetUserUniqKey do
+defmodule OAuth.Twitter.GetUserUniqKey do
   require IEx
 
   def call(%{oauth_token: oauth_token, oauth_verifier: oauth_verifier}) do

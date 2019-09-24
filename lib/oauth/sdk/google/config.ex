@@ -1,4 +1,4 @@
-defmodule Oauth.Sdk.Google.Config do
+defmodule OAuth.SDK.Google.Config do
   def data,
     do: %{
       base_url: "https://www.googleapis.com",

@@ -1,4 +1,4 @@
-defmodule Oauth.SignIn do
+defmodule OAuth.SignIn do
   require IEx
 
   def call(user, authorization, required_fields) do

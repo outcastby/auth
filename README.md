@@ -1,5 +1,5 @@
-# Oauth
-Oauth resolver for Graphql
+# OAuth
+OAuth resolver for Graphql
 
 ## Installation
 
@@ -90,7 +90,7 @@ Oauth resolver for Graphql
     ```
 7. If it necessary create form for required fields. Example:
     ```elixir
-    defmodule Oauth.SetEmailForm do
+    defmodule OAuth.SetEmailForm do
       @moduledoc false
       use Ext.BaseForm
     
@@ -116,7 +116,7 @@ Oauth resolver for Graphql
           arg :payload, non_null(:snake_keys_json)
           arg :provider, non_null(:provider_types)
     
-          resolve Oauth.Resolver.authorize(%{
+          resolve OAuth.Resolver.authorize(%{
                     repo: Repo,
                     schemas: %{user: User, auth: Authorization},
                     required_fields: [:email, :first_name]
@@ -158,7 +158,7 @@ Oauth resolver for Graphql
           arg :entity, non_null(:oauth_user_params)
           arg :oauth_data, non_null(:oauth_data_params)
     
-          resolve Oauth.Resolver.complete(%{
+          resolve OAuth.Resolver.complete(%{
                     repo: Repo,
                     schemas: %{user: User, auth: Authorization},
                     required_fields: [:email, :first_name],
@@ -171,7 +171,7 @@ Oauth resolver for Graphql
     field :twitter_authenticate_url, type: :string do
           arg :callback_url, non_null(:string)
     
-          resolve &Oauth.Resolver.twitter_authenticate_url/2
+          resolve &OAuth.Resolver.twitter_authenticate_url/2
         end
     ```
 #### Setup Google oauth 

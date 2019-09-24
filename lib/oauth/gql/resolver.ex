@@ -1,9 +1,9 @@
-defmodule Oauth.Resolver do
+defmodule OAuth.Resolver do
   use Ext.Gql.Resolvers.Base
 
   def authorize(params) do
     fn args, _ ->
-      case Oauth.Authorize.call(args, params) do
+      case OAuth.Authorize.call(args, params) do
         {:ok, user} -> {:ok, user}
         {:error, data} -> send_errors(data)
       end

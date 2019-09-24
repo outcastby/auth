@@ -1,4 +1,4 @@
-defmodule Oauth.Sdk.Facebook.Config do
+defmodule OAuth.SDK.Facebook.Config do
   def data,
     do: %{
       base_url: "https://graph.facebook.com",

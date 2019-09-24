@@ -1,5 +1,5 @@
-defmodule Oauth.Sdk.Google.Client do
-  use Sdk.BaseClient, endpoints: Map.keys(Oauth.Sdk.Google.Config.data().endpoints)
+defmodule OAuth.SDK.Google.Client do
+  use SDK.BaseClient, endpoints: Map.keys(OAuth.SDK.Google.Config.data().endpoints)
   require IEx
   require Logger
 end

@@ -1,8 +1,8 @@
-defmodule Oauth.Google.GetUserUniqKey do
+defmodule OAuth.Google.GetUserUniqKey do
   @iss_domains ["accounts.google.com", "https://accounts.google.com"]
 
   def call(%{id_token: token}) do
-    {:ok, %{"keys" => keys}} = Oauth.Sdk.Google.Client.certs()
+    {:ok, %{"keys" => keys}} = OAuth.SDK.Google.Client.certs()
 
     {:ok, %{"kid" => kid}} = Joken.peek_header(token)
 

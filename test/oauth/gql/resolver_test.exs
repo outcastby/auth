@@ -1,4 +1,4 @@
-defmodule Oauth.ResolverTest do
+defmodule OAuth.ResolverTest do
   use ExUnit.Case
   import Mock
   require IEx
@@ -24,7 +24,7 @@ defmodule Oauth.ResolverTest do
   setup_with_mocks([
     {Ecto, [:passthrough], [build_assoc: fn _, _, _ -> %TestAuthorization{} end]},
     {DateTime, [:passthrough], [utc_now: fn -> Ext.Utils.DateTime.from("2018-12-03T08:00:00.000000Z") end]},
-    {Oauth.Sdk.Facebook.Client, [:passthrough],
+    {OAuth.SDK.Facebook.Client, [:passthrough],
      [
        me: fn
          %{payload: %{access_token: "without_email"}} ->
@@ -59,7 +59,7 @@ defmodule Oauth.ResolverTest do
           }}
        end
      ]},
-    {Oauth.Sdk.Google.Client, [:passthrough],
+    {OAuth.SDK.Google.Client, [:passthrough],
      [
        certs: fn ->
          {:ok,
@@ -109,7 +109,7 @@ defmodule Oauth.ResolverTest do
     test "new user", %{google_args: google_args} do
       with_mock(TestRepo, [:passthrough], get_or_insert!: fn _, _, _ -> %TestUser{id: 1, email: "test@gmail.com"} end) do
         {:ok, user} =
-          Oauth.Resolver.authorize(%{
+          OAuth.Resolver.authorize(%{
             repo: TestRepo,
             schemas: %{user: TestUser, auth: TestAuthorization},
             required_fields: [:email]
@@ -144,7 +144,7 @@ defmodule Oauth.ResolverTest do
         end
       ) do
         {:ok, user} =
-          Oauth.Resolver.authorize(%{
+          OAuth.Resolver.authorize(%{
             repo: TestRepo,
             schemas: %{user: TestUser, auth: TestAuthorization},
             required_fields: [:email]
@@ -163,7 +163,7 @@ defmodule Oauth.ResolverTest do
         get_or_insert!: fn _, _, _ -> %TestUser{id: 1, email: "fb_first_id@facebook.com"} end
       ) do
         {:ok, user} =
-          Oauth.Resolver.authorize(%{
+          OAuth.Resolver.authorize(%{
             repo: TestRepo,
             schemas: %{user: TestUser, auth: TestAuthorization},
             required_fields: [:email]
@@ -193,7 +193,7 @@ defmodule Oauth.ResolverTest do
         {TestRepo, [:passthrough], save!: fn _, _ -> %TestUser{id: 1, email: nil} end}
       ]) do
         response =
-          Oauth.Resolver.authorize(%{
+          OAuth.Resolver.authorize(%{
             repo: TestRepo,
             schemas: %{user: TestUser, auth: TestAuthorization},
             required_fields: [:email]
@@ -234,7 +234,7 @@ defmodule Oauth.ResolverTest do
         end
       ) do
         {:ok, user} =
-          Oauth.Resolver.authorize(%{
+          OAuth.Resolver.authorize(%{
             repo: TestRepo,
             schemas: %{user: TestUser, auth: TestAuthorization},
             required_fields: [:email]

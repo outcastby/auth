@@ -1,4 +1,4 @@
-defmodule Oauth.SignUp do
+defmodule OAuth.SignUp do
   require IEx
 
   def call(
@@ -6,7 +6,7 @@ defmodule Oauth.SignUp do
         uid,
         %{repo: repo, schemas: %{user: user_schema}, required_fields: required_fields} = params
       ) do
-    user_details = Oauth.GetUserDetails.call(provider, payload)
+    user_details = OAuth.GetUserDetails.call(provider, payload)
 
     user =
       if user_details.email,
@@ -15,7 +15,7 @@ defmodule Oauth.SignUp do
 
     authorization = create_authorizations(user, provider, uid, params)
 
-    Oauth.SignIn.call(user, authorization, required_fields)
+    OAuth.SignIn.call(user, authorization, required_fields)
   end
 
   defp create_authorizations(user, provider, uid, %{repo: repo, schemas: %{user: user_schema, auth: auth_schema}}) do

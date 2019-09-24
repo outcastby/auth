@@ -1,9 +1,9 @@
-defmodule Oauth.Facebook.GetAppAccessToken do
+defmodule OAuth.Facebook.GetAppAccessToken do
   require Logger
   require IEx
 
   def call do
-    request = %Sdk.Request{
+    request = %SDK.Request{
       payload: %{
         client_id: Application.get_env(Mix.Project.config()[:app], :oauth)[:facebook_client_id],
         client_secret: Application.get_env(Mix.Project.config()[:app], :oauth)[:facebook_client_secret],
@@ -11,7 +11,7 @@ defmodule Oauth.Facebook.GetAppAccessToken do
       }
     }
 
-    case Oauth.Sdk.Facebook.Client.app_token(request) do
+    case OAuth.SDK.Facebook.Client.app_token(request) do
       {:ok, %{"access_token" => access_token}} ->
         access_token
 

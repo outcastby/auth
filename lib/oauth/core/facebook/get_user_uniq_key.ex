@@ -1,9 +1,9 @@
-defmodule Oauth.Facebook.GetUserUniqKey do
+defmodule OAuth.Facebook.GetUserUniqKey do
   require IEx
 
   def call(%{access_token: user_token} = auth_response) do
     user_token
-    |> Oauth.Facebook.DecodeUserToken.call()
+    |> OAuth.Facebook.DecodeUserToken.call()
     |> Ext.Utils.Base.to_atom()
     |> check_valid?()
     |> check_app_id()

@@ -1,18 +1,18 @@
-defmodule Oauth.Facebook.DecodeUserToken do
+defmodule OAuth.Facebook.DecodeUserToken do
   require Logger
   require IEx
 
   def call(user_token) do
-    app_token = Oauth.Facebook.GetAppAccessToken.call()
+    app_token = OAuth.Facebook.GetAppAccessToken.call()
 
-    request = %Sdk.Request{
+    request = %SDK.Request{
       payload: %{
         input_token: user_token,
         access_token: app_token
       }
     }
 
-    case Oauth.Sdk.Facebook.Client.debug_user_token(request) do
+    case OAuth.SDK.Facebook.Client.debug_user_token(request) do
       {:ok, %{"data" => data}} ->
         data
 

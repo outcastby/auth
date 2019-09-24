@@ -1,5 +1,5 @@
-defmodule Oauth.Sdk.Facebook.Client do
-  use Sdk.BaseClient, endpoints: Map.keys(Oauth.Sdk.Facebook.Config.data().endpoints)
+defmodule OAuth.SDK.Facebook.Client do
+  use SDK.BaseClient, endpoints: Map.keys(OAuth.SDK.Facebook.Config.data().endpoints)
   require IEx
   require Logger
 end

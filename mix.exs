@@ -1,4 +1,4 @@
-defmodule Oauth.MixProject do
+defmodule OAuth.MixProject do
   use Mix.Project
 
   def project do
