@@ -1,5 +1,5 @@
 defmodule OAuth.Resolver do
-  use Ext.Gql.Resolvers.Base
+  use Ext.GQL.Resolvers.Base
 
   def authorize(params) do
     fn args, _ ->
