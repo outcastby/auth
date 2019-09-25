@@ -34,7 +34,7 @@ defmodule OAuth.Resolver do
           missing_fields =
             required_fields -- (user |> Map.from_struct() |> Enum.filter(fn {_, v} -> v != nil end) |> Keyword.keys())
 
-          form = form.changeset(entity, %{missing_fields: missing_fields})
+          form = form.call(entity, %{missing_fields: missing_fields})
 
           cond do
             form.valid? -> repo.save(user, entity)
