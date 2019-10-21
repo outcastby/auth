@@ -94,7 +94,8 @@ defmodule OAuth.ResolverTest do
         id_token:
           "eyJhbGciOiJSUzI1NiIsImtpZCI6IjJjM2ZhYzE2YjczZmM4NDhkNDI2ZDVhMjI1YWM4MmJjMWMwMmFlZmQiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiOTcyOTg2MTkxMzM3LWphNGxiamRqbGlmZTByNDZkYXZrM2xiMm92ZG03MnQyLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiOTcyOTg2MTkxMzM3LWphNGxiamRqbGlmZTByNDZkYXZrM2xiMm92ZG03MnQyLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTEzMTI3MzU5MjgyNjczMzk2MzQxIiwiZW1haWwiOiJtaWhleWtydWdAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiJ1V3FSTWhxckhmYk9XN3lVSFo1am9BIiwibmFtZSI6ItCc0LjRhdCw0LjQuyDQmtGA0YPQs9C70LjQuiIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vLTRudEdxMkVBR2NrL0FBQUFBQUFBQUFJL0FBQUFBQUFBQUFBL0FDSGkzcmZhS0lETG42X0RXam4yWEstU01VNWk0YXBrZFEvczk2LWMvcGhvdG8uanBnIiwiZ2l2ZW5fbmFtZSI6ItCc0LjRhdCw0LjQuyIsImZhbWlseV9uYW1lIjoi0JrRgNGD0LPQu9C40LoiLCJsb2NhbGUiOiJydSIsImlhdCI6MTU1ODQ1MTQxMCwiZXhwIjoxNTU4NDU1MDEwLCJqdGkiOiI2OGFiMGNiM2UxMjM4MWZiZDc2NmMyNzcyOTAzNDYyZDYxMWE4ZjZhIn0.azwaSsL5uiIPqbMAoaRf4DHWubCdVJOfCgaBHfVbj29go6fGJ3xT6WNuN-09l4hMGx_X2_bzdwgOgO_gVPqwgYvSWXYoy9UHg2qgd3ZxRMNjyVErP8DQIr3bwmGewHqtIiLABhBjI0lqXGJEJL7eKqBizBj5rlnhlwCYGw8biF8G7tPHanYqO-nooKZfWgQp0ClBb4d5wmi62s-zAxFtMGNJ0bq1EsgzpomLjQ5XPXH2vU6eSclNAugbWH4iQ3H84JGgLtV8iUrHnVEjs_b4dsFlgQSRdBDnMmwc1-quUmgYo42tGj5F1CYIzNWXvL8sZi5T_D4M4281rcKT-Ph2rw"
       },
-      provider: :google
+      provider: :google,
+      extra_params: %{owner_id: 1}
     }
 
     fb_args_with_email = %{payload: %{access_token: "with_email", user_id: "fb_user_id"}, provider: :facebook}
@@ -116,9 +117,7 @@ defmodule OAuth.ResolverTest do
           }).(google_args, %{})
 
         assert called(
-                 TestRepo.get_or_insert!(TestUser, %{email: "test@gmail.com"}, %{
-                   email: "test@gmail.com"
-                 })
+                 TestRepo.get_or_insert!(TestUser, %{email: "test@gmail.com"}, %{email: "test@gmail.com", owner_id: 1})
                )
 
         assert called(

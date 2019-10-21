@@ -1,12 +1,14 @@
 defmodule OAuth.SignUp do
-  require IEx
+  import Ext.Utils.Map
 
   def call(
-        %{payload: payload, provider: provider},
+        %{payload: payload, provider: provider} = args,
         uid,
         %{repo: repo, schemas: %{user: user_schema}, required_fields: required_fields} = params
       ) do
     user_details = OAuth.GetUserDetails.call(provider, payload)
+
+    user_details = if extra_params = args[:extra_params], do: user_details ||| extra_params, else: user_details
 
     user =
       if user_details.email,
