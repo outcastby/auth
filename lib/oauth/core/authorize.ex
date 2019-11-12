@@ -13,7 +13,9 @@ defmodule OAuth.Authorize do
          |> repo.get_by(%{provider: provider, uid: uid})
          |> repo.preload(user_assoc) do
       nil ->
-        OAuth.SignUp.call(args, uid, params)
+        if Application.get_env(Mix.Project.config()[:app], :oauth)[:close_sign_up],
+          do: {:error, :sign_up_closed},
+          else: OAuth.SignUp.call(args, uid, params)
 
       authorization ->
         OAuth.SignIn.call(Ext.Utils.Base.get_in(authorization, [user_assoc]), authorization, required_fields)
