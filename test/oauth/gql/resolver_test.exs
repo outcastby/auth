@@ -189,7 +189,11 @@ defmodule OAuth.ResolverTest do
       with_mocks([
         {Ecto, [:passthrough],
          [build_assoc: fn _, _, _ -> %TestAuthorization{id: 1, uid: "fb_user_id", provider: :facebook} end]},
-        {TestRepo, [:passthrough], save!: fn _, _ -> %TestUser{id: 1, email: nil} end}
+        {TestRepo, [:passthrough],
+         save!: fn
+           %TestUser{}, _ -> %TestUser{id: 1, email: nil}
+           %TestAuthorization{} = entity, _ -> entity
+         end}
       ]) do
         response =
           OAuth.Resolver.authorize(%{

@@ -4,7 +4,7 @@ defmodule OAuth.Facebook.GetUserDetails do
 
   def call(%{access_token: access_token}) do
     request = %SDK.Request{
-      payload: %{fields: "id,email,first_name,last_name,name", access_token: access_token}
+      payload: %{fields: "id,email,first_name,last_name,name,picture", type: "normal", access_token: access_token}
     }
 
     case OAuth.SDK.Facebook.Client.me(request) do
@@ -14,7 +14,8 @@ defmodule OAuth.Facebook.GetUserDetails do
           first_name: fb_user["first_name"],
           last_name: fb_user["last_name"],
           full_name: fb_user["name"],
-          id: fb_user["sub"]
+          id: fb_user["sub"],
+          avatar: get_in(fb_user, ["picture", "data", "url"])
         }
 
       {:error, response} ->

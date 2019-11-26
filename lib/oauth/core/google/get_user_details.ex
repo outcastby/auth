@@ -9,7 +9,8 @@ defmodule OAuth.Google.GetUserDetails do
       first_name: google_user["given_name"],
       last_name: google_user["family_name"],
       full_name: google_user["name"],
-      id: google_user["sub"]
+      id: google_user["sub"],
+      avatar: google_user["picture"]
     }
   end
 end
