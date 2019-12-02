@@ -1,13 +1,25 @@
-# OAuth
-OAuth resolver for Graphql
+# Auth
+Auth resolver for Graphql
+
+## Content
+* [Installation](#installation)
+* [Setup server](#setup-server)
+    - [Auth struct](#auth-struct)
+    - [Mutations](#mutations)
+    - [Setup Google oauth](#setup-google-oauth)
+    - [Setup Facebook oauth](#setup-facebook-oauth)
+    - [Setup Twitter oauth](#setup-twitter-oauth)
+* [Setup client](#setup-client-for-internal-use)
+* [Auth Plug](#auth-plug)
+
 
 ## Installation
 
-1. Add `oauth` to your list of dependencies in `mix.exs`.
+1. Add `auth` to your list of dependencies in `mix.exs`.
     ```elixir
     def deps do
       [
-        {:oauth, git: "https://github.com/outcastby/oauth.git"}
+        {:auth, git: "https://github.com/outcastby/auth.git"}
       ]
     end
     ```
@@ -17,7 +29,7 @@ OAuth resolver for Graphql
     $ mix deps.get
     ```
 ## Setup server
-3. Fill in config for oauth (how to configure oauth apps for providers see below):
+1. Fill in config for auth (how to configure oauth apps for providers see below):
     ```elixir
     config :bomb_brawl, :oauth,
       google_client_id: "",
@@ -26,9 +38,14 @@ OAuth resolver for Graphql
       twitter_consumer_key: "",
       twitter_consumer_secret: "",
       twitter_access_token: "",
-      twitter_access_token_secret: ""
+      twitter_access_token_secret: "",
+      close_sign_up: [User],
+      joken_default_exp: 900
     ```
-4. Create table for authorization records. Example:
+   `close_sign_up` - list of structs for which sign up is to be canceled
+   `joken_default_exp` - expiration of JWT `access_token`
+   
+2. Create table for authorization records. Example:
     * migration:
         ```elixir
         defmodule Repo.Migrations.CreateAuthorizations do
@@ -69,11 +86,60 @@ OAuth resolver for Graphql
           end
         end
         ```
-5. Add association to User schema: 
-    ```elixir
-    has_many :authorizations, Authorization, on_replace: :delete
-    ```
-6. Create initializer for oauth (path: `lib/bomb_brawl/initializers/oauth.ex`) and add `Ext.RunInitializers.call(<app_name>)` to `start` function of `application.ex` 
+3. Add `restore_hash`, `restore_expire` and `refresh_token` fields to `users` table. 
+   Add `authorizations` association to User schema
+    * migration
+        ```elixir
+          defmodule Repo.Migrations.AddRestoreDataToUsers do
+            use Ecto.Migration
+          
+            def change do
+              alter table(:users) do
+                add(:restore_hash, :string)
+                add(:restore_expire, :timestamptz)
+                add(:refresh_token, :string)
+              end
+          
+              create(unique_index(:users, :restore_hash))
+              create(unique_index(:users, :refresh_token))
+            end
+          end
+        ```
+    * schema:
+        ```elixir
+          defmodule User do
+            @moduledoc false
+            use Fun.Schema
+          
+            schema "users" do
+              ...
+              field :email, :string
+              field :encrypted_password, :string, default: ""
+              field :password, :string, virtual: true
+              field :password_confirmation, :string, virtual: true
+      
+              field :refresh_token, :string
+              field :restore_hash, :string
+              field :restore_expire, :utc_datetime_usec
+      
+              has_many :authorizations, Authorization, on_replace: :delete
+              ...
+            end
+          
+            def changeset(struct, params \\ %{}) do
+              struct
+              |> cast(params, [
+                ...
+                :restore_hash,
+                :restore_expire,
+                :refresh_token
+                ...
+              ])
+            end
+          end
+        ```
+4. Create initializer for oauth (path: `lib/bomb_brawl/initializers/oauth.ex`) and 
+   add `Ext.RunInitializers.call(<app_name>)` to `start` function of `application.ex` 
     ```elixir
     defmodule Initializers.Oauth do
       @moduledoc false
@@ -88,7 +154,7 @@ OAuth resolver for Graphql
       end
     end
     ```
-7. If it necessary create form for required fields. Example:
+5. If it necessary create form for required fields. Example:
     ```elixir
     defmodule OAuth.SetEmailForm do
       @moduledoc false
@@ -107,8 +173,142 @@ OAuth resolver for Graphql
       end
     end
     ```
-#### Mutations
-1. Start authentication by provider:
+6. Create validation form for `sign_up`:
+    ```elixir
+     defmodule Users.SaveForm do
+       @moduledoc false
+       use Ext.BaseForm
+     
+       Ext.BaseForm.schema "" do
+         field :id, :integer
+         field :email, :string
+         field :password, :string, virtual: true
+         field :password_confirmation, :string, virtual: true
+       end
+     
+       def changeset(form) do
+         form
+         |> validate_length(:password, min: 6)
+         |> Auth.Validators.Password.call()
+         |> Ext.Validators.Email.call(%{field: :email})
+         |> Ext.Validators.Uniq.call(%{schema: User, repo: Fun.Repo, fields: [:email]})
+       end
+     end
+    ```
+7. Create caller for sending message to email for restore password:
+    ```elixir
+     defmodule Auth.SendEmail do
+       def call(from_email) do
+         fn (user, restore_url) ->
+           user.email
+           |> AppWeb.Emails.Auth.reset_password_email(from_email, user.restore_hash, restore_url)
+           |> AppWeb.Mailer.deliver_later()
+         end
+       end
+     end
+    ```
+### Auth struct
+Add 
+```elixir
+defmodule GQL.Auth.Struct do
+  @moduledoc false
+  use Absinthe.Schema.Notation
+
+  object :auth do
+    field :access_token, :string
+    field :refresh_token, :string
+    field :current_user, :user
+  end
+  
+  object :user do
+    field :id, :integer
+    field :email, :string
+  end
+end
+```
+
+### Mutations
+1. Sign In
+    ```elixir
+     object :auth_mutations do
+       field :sign_in, type: :auth do
+         arg :email, non_null(:string)
+         arg :password, non_null(:string)
+ 
+         resolve Auth.Resolver.sign_in(%{repo: Repo, schema: User})
+       end
+     end
+    ```
+   
+2. Sign Up
+    ```elixir
+     input_object :sign_up_params do
+       field :email, non_null(:string)
+       field :password, non_null(:string)
+       field :password_confirmation, non_null(:string)
+     end
+     
+     object :auth_mutations do
+       field :sign_up, type: :auth do
+         arg :entity, :sign_up_params
+     
+         resolve Auth.Resolver.sign_up(%{repo: Repo, schema: User, form: Users.SaveForm})
+       end
+     end
+    ```
+   
+3. Forgot Password
+    ```elixir
+     object :auth_mutations do
+       field :forgot_password, type: :string do
+         arg :email, non_null(:string)
+         arg :restore_url, non_null(:string)
+     
+         resolve Auth.Resolver.forgot_password(%{
+           repo: Repo,
+           schema: User,
+           send_caller: Auth.SendEmail.call(System.get_env("DASHBOARD_EMAIL"))
+         })
+       end
+     end
+    ```
+   
+4. Restore Password
+    ```elixir
+     input_object :restore_params do
+       field :restore_hash, non_null(:string)
+       field :password, non_null(:string)
+       field :password_confirmation, non_null(:string)
+     end
+
+     object :auth_mutations do
+        field :restore_password, type: :auth do
+          arg :entity, :restore_params
+    
+          resolve Auth.Resolver.restore_password(%{
+            repo: Repo,
+            schema: User,
+            form:  Users.SaveForm
+          })
+        end
+     end
+    ```
+   
+5. Refresh Token
+    ```elixir
+     object :auth_mutations do
+        field :refresh_token, type: :auth do
+          arg :refresh_token, :string
+    
+          resolve Auth.Resolver.refresh_token(%{
+            repo: Repo,
+            schema: User,
+          })
+        end
+     end
+    ```
+   
+6. Start authentication by provider:
     ```elixir
     enum(:provider_types, values: [:facebook, :google, :twitter])
    
@@ -116,7 +316,7 @@ OAuth resolver for Graphql
           arg :payload, non_null(:snake_keys_json)
           arg :provider, non_null(:provider_types)
     
-          resolve OAuth.Resolver.authorize(%{
+          resolve Auth.Resolver.provider_auth(%{
                     repo: Repo,
                     schemas: %{user: User, auth: Authorization},
                     required_fields: [:email, :first_name]
@@ -142,7 +342,7 @@ OAuth resolver for Graphql
     ```json
     {"oauth_token": "fake_oauth_token", "oauth_verifier": "fake_oauth_verifier"}
     ```
-2. Finish authentication and check required fields: 
+7. Finish authentication and check required fields: 
     ```elixir
     input_object :oauth_user_params do
       field :email, :string
@@ -158,7 +358,7 @@ OAuth resolver for Graphql
           arg :entity, non_null(:oauth_user_params)
           arg :oauth_data, non_null(:oauth_data_params)
     
-          resolve OAuth.Resolver.complete(%{
+          resolve Auth.Resolver.complete(%{
                     repo: Repo,
                     schemas: %{user: User, auth: Authorization},
                     required_fields: [:email, :first_name],
@@ -166,15 +366,15 @@ OAuth resolver for Graphql
                   })
         end
     ```
-3. Mutation for getting twitter authenticate url:
+8. Mutation for getting twitter authenticate url:
     ```elixir
     field :twitter_authenticate_url, type: :string do
           arg :callback_url, non_null(:string)
     
-          resolve &OAuth.Resolver.twitter_authenticate_url/2
+          resolve &Auth.Resolver.twitter_authenticate_url/2
         end
     ```
-#### Setup Google oauth 
+### Setup Google oauth 
 1. Create new google project (https://console.developers.google.com). 
 2. On tab `OAuth consent screen` fill in `Application name` and `Authorized domains` fields.
 3. On tab `Credentials` create `OAuth client ID`. Choose `Web application` type. Fill in 
@@ -231,3 +431,24 @@ OAuth resolver for Graphql
     ```
 ## Setup client (for internal use)
 See https://trulysocialgames.atlassian.net/wiki/spaces/BBN/pages/1420492906/Auth+and+OAuth
+
+## Auth Plug
+Check user authorization by JWT access token in `Authorization` header.
+Add to router: 
+```elixir
+plug Auth.Plug,
+  repos: %{User => Fun.Repo, Manager => Fun.Repo},
+  exclude: [
+    :sign_in,
+    :sign_up,
+    :forgot_password,
+    :restore_password,
+    :provider_auth,
+    :twitter_authenticate_url,
+    :complete_oauth,
+    :subscribe,
+    :refresh_token
+  ]
+```
+`repos` - map where key is user's schema, value is repo for this schema.
+`exclude` - list of excluded mutations.
