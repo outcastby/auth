@@ -3,7 +3,6 @@ defmodule Auth.Plug do
   @behaviour Plug
 
   import Plug.Conn
-  require IEx
 
   def init(opts) do
     opts
