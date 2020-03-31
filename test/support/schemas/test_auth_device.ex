@@ -1,0 +1,11 @@
+defmodule TestAuthDevice do
+  use Ecto.Schema
+
+  schema "test_auth_devices" do
+    field :uuid, :string
+    field :refresh_token, :string
+    field :browser, :string
+    field :platform, :string
+    belongs_to(:test_user, TestUser)
+  end
+end

@@ -3,7 +3,7 @@ defmodule Auth.ForgotPasswordForm do
   use Ext.BaseForm
 
   Ext.BaseForm.schema "" do
-    field :email, :string, virtual: true, required: true
+    field(:email, :string, virtual: true, required: true)
   end
 
   def changeset(form) do

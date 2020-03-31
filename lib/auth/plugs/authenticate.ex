@@ -1,4 +1,4 @@
-defmodule Auth.Plug do
+defmodule Auth.Plugs.Authenticate do
   @moduledoc false
   @behaviour Plug
 

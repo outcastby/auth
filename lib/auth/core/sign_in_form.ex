@@ -3,8 +3,8 @@ defmodule Auth.SignInForm do
   use Ext.BaseForm
 
   Ext.BaseForm.schema "" do
-    field :email, :string, virtual: true, required: true
-    field :password, :string, virtual: true, required: true
+    field(:email, :string, virtual: true, required: true)
+    field(:password, :string, virtual: true, required: true)
   end
 
   def changeset(form) do
@@ -13,7 +13,7 @@ defmodule Auth.SignInForm do
     |> validate_user()
   end
 
-  defp fetch_user(%{changes: %{email: email, context: %{repo: repo, schema: schema}}} = form),
+  defp fetch_user(%{changes: %{email: email, context: %{repo: repo, schemas: %{user: schema}}}} = form),
     do: __MODULE__.with_context(form, %{user: repo.get_by(schema, email: email)})
 
   defp validate_user(%{changes: %{context: %{user: nil}}} = form), do: add_error(form, :email, "invalid_email")

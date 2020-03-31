@@ -1,4 +1,4 @@
-defmodule Auth.PlugTest do
+defmodule Auth.Plugs.AuthenticateTest do
   use Auth.ConnCase
   @moduletag :user
 
@@ -13,21 +13,21 @@ defmodule Auth.PlugTest do
   end
 
   test ".init" do
-    assert Auth.Plug.init(opts: "opts") == [opts: "opts"]
+    assert Auth.Plugs.Authenticate.init(opts: "opts") == [opts: "opts"]
   end
 
   describe ".call" do
     test "/graphiql" do
       conn = %{params: %{}}
-      assert Auth.Plug.call(conn, []) == conn
+      assert Auth.Plugs.Authenticate.call(conn, []) == conn
     end
 
     test "excluded query", %{test_conn: test_conn} do
-      assert Auth.Plug.call(test_conn, exclude: [:genders]) == test_conn
+      assert Auth.Plugs.Authenticate.call(test_conn, exclude: [:genders]) == test_conn
     end
 
     test "without authorization header", %{test_conn: test_conn} do
-      conn = Auth.Plug.call(test_conn, [])
+      conn = Auth.Plugs.Authenticate.call(test_conn, [])
       assert conn.status == 403
       assert conn.halted
       assert conn.resp_body == "Fill in header 'Authorization'"
@@ -36,7 +36,7 @@ defmodule Auth.PlugTest do
     test "without valid authorization header", %{conn: conn, conn_params: conn_params, current_user: current_user} do
       with_mocks [{TestRepo, [:passthrough], [get: fn _, _ -> current_user end]}] do
         %{private: %{absinthe: %{context: %{current_user: conn_user}}}} =
-          Auth.Plug.call(Map.merge(conn, %{params: conn_params}), repos: %{TestUser => TestRepo})
+          Auth.Plugs.Authenticate.call(Map.merge(conn, %{params: conn_params}), repos: %{TestUser => TestRepo})
 
         assert conn_user == current_user
       end
@@ -44,7 +44,7 @@ defmodule Auth.PlugTest do
 
     test "without invalid authorization header", %{conn: conn, conn_params: conn_params} do
       resp_conn =
-        Auth.Plug.call(
+        Auth.Plugs.Authenticate.call(
           Map.merge(conn, %{params: conn_params, req_headers: [{"authorization", "invalid_access_key"}]}),
           []
         )

@@ -18,7 +18,9 @@ defmodule Auth.Providers.Authorize do
           else: Auth.Providers.SignUp.call(args, uid, params)
 
       authorization ->
-        authorization |> Ext.Utils.Base.get_in([user_assoc]) |> Auth.Providers.SignIn.call(authorization, required_fields)
+        authorization
+        |> Ext.Utils.Base.get_in([user_assoc])
+        |> Auth.Providers.SignIn.call(authorization, required_fields)
     end
   end
 end

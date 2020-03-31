@@ -86,7 +86,14 @@ defmodule Auth.ResolverTest do
        end
      ]},
     {Joken, [:passthrough], [verify: fn _, _ -> {:ok, @google_user} end, peek_claims: fn _ -> {:ok, @google_user} end]},
-    {Ext.Utils.Repo, [:passthrough], [generate_uniq_hash: fn _, _, _, _ -> "uniq_hash" end]}
+    {Ext.Utils.Repo, [:passthrough],
+     [
+       generate_uniq_hash: fn
+         _, :refresh_token, _, _ -> "uniq_refresh_token_hash"
+         _, :uuid, _, _ -> "uniq_device_uuid_hash"
+         _, :restore_hash, _, _ -> "uniq_restore_hash"
+       end
+     ]}
   ]) do
     google_args = %{
       payload: %{
@@ -97,23 +104,227 @@ defmodule Auth.ResolverTest do
       extra_params: %{owner_id: 1}
     }
 
+    info = %{
+      context: %{
+        device_data: %{
+          browser: "Browser",
+          ip: "127.0.0.1",
+          platform: "Platform"
+        }
+      }
+    }
+
     fb_args_with_email = %{payload: %{access_token: "with_email", user_id: "fb_user_id"}, provider: :facebook}
 
     fb_args_without_email = %{payload: %{access_token: "without_email", user_id: "fb_user_id"}, provider: :facebook}
 
     {:ok,
-     google_args: google_args, fb_args_with_email: fb_args_with_email, fb_args_without_email: fb_args_without_email}
+     google_args: google_args,
+     info: info,
+     fb_args_with_email: fb_args_with_email,
+     fb_args_without_email: fb_args_without_email}
+  end
+
+  describe ".sign_in" do
+    test "without device", %{info: info} do
+      with_mocks [
+        {TestRepo, [:passthrough],
+         [
+           get_by: fn _, _ ->
+             %TestUser{id: 1, email: "test@email.com", encrypted_password: Bcrypt.hash_pwd_salt("123qwe")}
+           end
+         ]}
+      ] do
+        {:ok,
+         %{
+           access_token: access_token,
+           refresh_token: refresh_token,
+           current_user: current_user,
+           device_uuid: device_uuid
+         }} =
+          Auth.Resolver.sign_in(%{repo: TestRepo, schemas: %{user: TestUser, device: TestAuthDevice}}).(
+            %{email: "test@email.com", password: "123qwe"},
+            info
+          )
+
+        {:ok, payload} = Auth.Token.verify_and_validate(access_token)
+
+        assert_lists(Map.keys(payload), ["exp", "id", "schema"])
+        assert payload["id"] == 1
+        assert current_user.email == "test@email.com"
+        assert refresh_token == "uniq_refresh_token_hash"
+        assert device_uuid == "uniq_device_uuid_hash"
+      end
+    end
+
+    test "with device", %{info: info} do
+      with_mocks [
+        {TestRepo, [:passthrough],
+         [
+           get_by: fn _, _ ->
+             %TestUser{id: 1, email: "test@email.com", encrypted_password: Bcrypt.hash_pwd_salt("123qwe")}
+           end
+         ]}
+      ] do
+        {:ok,
+         %{
+           access_token: access_token,
+           refresh_token: refresh_token,
+           device_uuid: device_uuid,
+           current_user: current_user
+         }} =
+          Auth.Resolver.sign_in(%{repo: TestRepo, schemas: %{user: TestUser, device: TestAuthDevice}}).(
+            %{email: "test@email.com", password: "123qwe", device_uuid: "existing_device_uuid"},
+            info
+          )
+
+        {:ok, payload} = Auth.Token.verify_and_validate(access_token)
+
+        assert_lists(Map.keys(payload), ["exp", "id", "schema"])
+        assert payload["id"] == 1
+        assert current_user.email == "test@email.com"
+        assert refresh_token == "uniq_refresh_token_hash"
+        assert device_uuid == "existing_device_uuid"
+      end
+    end
+  end
+
+  describe "sign_up" do
+    test "open", %{info: info} do
+      with_mocks([
+        {Ext.GQL.Resolvers.Base, [:passthrough],
+         [create: fn _, _, _ -> fn _, _ -> {:ok, %TestUser{id: 1, email: "test@email.com"}} end end]}
+      ]) do
+        {:ok,
+         %{
+           access_token: access_token,
+           refresh_token: refresh_token,
+           device_uuid: device_uuid,
+           current_user: user
+         }} =
+          Auth.Resolver.sign_up(%{repo: TestRepo, schemas: %{user: TestUser, device: TestAuthDevice}}).(
+            %{entity: %{email: "test@email.com", password: "123qwe", password_confirmation: "123qwe"}},
+            info
+          )
+
+        assert access_token
+        assert user.email == "test@email.com"
+        assert refresh_token == "uniq_refresh_token_hash"
+        assert device_uuid == "uniq_device_uuid_hash"
+      end
+    end
+
+    test "closed", %{info: info} do
+      with_mocks([
+        {Application, [:passthrough], [get_env: fn :auth, :auth -> [close_sign_up: [TestUser]] end]}
+      ]) do
+        {:error, [message: message, code: 400]} =
+          Auth.Resolver.sign_up(%{repo: TestRepo, schemas: %{user: TestUser, device: TestAuthDevice}}).(%{}, info)
+
+        assert message == "sign_up_closed"
+      end
+    end
+  end
+
+  test ".refresh_token", %{info: info} do
+    resp =
+      Auth.Resolver.refresh_token(%{repo: TestRepo, schemas: %{user: TestUser, device: TestAuthDevice}}).(
+        %{refresh_token: "refresh_token"},
+        info
+      )
+
+    assert resp == {:error, [message: "invalid_refresh_token", code: 401]}
+  end
+
+  describe ".forgot_password" do
+    test "user exist", %{info: info} do
+      with_mocks [
+        {TestRepo, [:passthrough],
+         [
+           get_by: fn _, _ ->
+             %TestUser{id: 1, email: "test@email.com"}
+           end
+         ]}
+      ] do
+        resp =
+          Auth.Resolver.forgot_password(%{repo: TestRepo, schema: TestUser, send_caller: fn _, _ -> nil end}).(
+            %{email: "test@email.com", restore_url: ""},
+            info
+          )
+
+        assert resp == {:ok, "ok"}
+      end
+    end
+
+    test "user not exist", %{info: info} do
+      resp =
+        Auth.Resolver.forgot_password(%{repo: TestRepo, schema: TestUser, send_caller: fn _, _ -> nil end}).(
+          %{email: "test@email.com", restore_url: ""},
+          info
+        )
+
+      assert resp ==
+               {:error,
+                [message: "Validation Error", code: 400, details: %{"email" => ["Email test@email.com not found"]}]}
+    end
+  end
+
+  describe ".restore_password" do
+    test "user exist", %{info: info} do
+      with_mocks [
+        {TestRepo, [:passthrough],
+         [
+           get_by: fn _, _ ->
+             %TestUser{id: 1, restore_hash: "123qweasdzxc", restore_expire: ~U[2019-09-19 13:00:00.000000Z]}
+           end,
+           save!: fn user, _ -> user end
+         ]},
+        {DateTime, [:passthrough], utc_now: fn -> ~U[2019-09-19 13:00:00.000000Z] end}
+      ] do
+        {:ok, %{access_token: _, refresh_token: _, device_uuid: _, current_user: user}} =
+          Auth.Resolver.restore_password(%{repo: TestRepo, schemas: %{user: TestUser, device: TestAuthDevice}}).(
+            %{entity: %{restore_hash: "123qweasdzxc", password: "123qwe", password_confirmation: "123qwe"}},
+            info
+          )
+
+        assert called(
+                 TestRepo.save!(user, %{
+                   restore_hash: nil,
+                   restore_expire: nil,
+                   password: "123qwe",
+                   password_confirmation: "123qwe"
+                 })
+               )
+      end
+    end
+
+    test "user not exist", %{info: info} do
+      resp =
+        Auth.Resolver.restore_password(%{repo: TestRepo, schemas: %{user: TestUser, device: TestAuthDevice}}).(
+          %{entity: %{restore_hash: "123qweasdzxc", password: "123qwe", password_confirmation: "123qwe"}},
+          info
+        )
+
+      assert resp ==
+               {:error, [message: "Validation Error", code: 400, details: %{"password" => ["Invalid restore hash"]}]}
+    end
   end
 
   describe "google auth" do
-    test "new user", %{google_args: google_args} do
+    test "new user", %{google_args: google_args, info: info} do
       with_mock(TestRepo, [:passthrough], get_or_insert!: fn _, _, _ -> %TestUser{id: 1, email: "test@gmail.com"} end) do
-        {:ok, %{access_token: access_token, refresh_token: refresh_token, current_user: current_user}} =
+        {:ok,
+         %{
+           access_token: access_token,
+           refresh_token: refresh_token,
+           device_uuid: device_uuid,
+           current_user: current_user
+         }} =
           Auth.Resolver.provider_auth(%{
             repo: TestRepo,
-            schemas: %{user: TestUser, auth: TestAuthorization},
+            schemas: %{user: TestUser, device: TestAuthDevice, auth: TestAuthorization},
             required_fields: [:email]
-          }).(google_args, %{})
+          }).(google_args, info)
 
         assert called(
                  TestRepo.get_or_insert!(TestUser, %{email: "test@gmail.com"}, %{email: "test@gmail.com", owner_id: 1})
@@ -127,12 +338,13 @@ defmodule Auth.ResolverTest do
                )
 
         refute is_nil(access_token)
-        assert refresh_token == "uniq_hash"
+        assert refresh_token == "uniq_refresh_token_hash"
         assert current_user.email == "test@gmail.com"
+        assert device_uuid == "uniq_device_uuid_hash"
       end
     end
 
-    test "existing user", %{google_args: google_args} do
+    test "existing user", %{google_args: google_args, info: info} do
       with_mock(TestRepo, [:passthrough],
         get_by: fn _, _ -> %TestAuthorization{provider: :google, uid: "123456789"} end,
         preload: fn _, _ ->
@@ -146,9 +358,9 @@ defmodule Auth.ResolverTest do
         {:ok, %{current_user: current_user}} =
           Auth.Resolver.provider_auth(%{
             repo: TestRepo,
-            schemas: %{user: TestUser, auth: TestAuthorization},
+            schemas: %{user: TestUser, device: TestAuthDevice, auth: TestAuthorization},
             required_fields: [:email]
-          }).(google_args, %{})
+          }).(google_args, info)
 
         refute called(TestRepo.get_or_insert!(:_, :_, :_))
         refute called(Ecto.build_assoc(:_, :_, :_))
@@ -158,16 +370,16 @@ defmodule Auth.ResolverTest do
   end
 
   describe "facebook auth" do
-    test "new user, facebook with email", %{fb_args_with_email: fb_args_with_email} do
+    test "new user, facebook with email", %{fb_args_with_email: fb_args_with_email, info: info} do
       with_mock(TestRepo, [:passthrough],
         get_or_insert!: fn _, _, _ -> %TestUser{id: 1, email: "fb_first_id@facebook.com"} end
       ) do
         {:ok, %{current_user: current_user}} =
           Auth.Resolver.provider_auth(%{
             repo: TestRepo,
-            schemas: %{user: TestUser, auth: TestAuthorization},
+            schemas: %{user: TestUser, device: TestAuthDevice, auth: TestAuthorization},
             required_fields: [:email]
-          }).(fb_args_with_email, %{})
+          }).(fb_args_with_email, info)
 
         assert called(
                  TestRepo.get_or_insert!(TestUser, %{email: "fb_first_id@facebook.com"}, %{
@@ -186,28 +398,28 @@ defmodule Auth.ResolverTest do
       end
     end
 
-    test "new user, facebook without email", %{fb_args_without_email: fb_args_without_email} do
+    test "new user, facebook without email", %{fb_args_without_email: fb_args_without_email, info: info} do
       with_mocks([
         {Ecto, [:passthrough],
          [build_assoc: fn _, _, _ -> %TestAuthorization{id: 1, uid: "fb_user_id", provider: :facebook} end]},
         {TestRepo, [:passthrough],
          save!: fn
-           %TestUser{}, _ -> %TestUser{id: 1, email: nil, refresh_token: "refresh_token"}
+           %TestUser{}, _ -> %TestUser{id: 1, email: nil}
            %TestAuthorization{} = entity, _ -> entity
          end}
       ]) do
         response =
           Auth.Resolver.provider_auth(%{
             repo: TestRepo,
-            schemas: %{user: TestUser, auth: TestAuthorization},
+            schemas: %{user: TestUser, device: TestAuthDevice, auth: TestAuthorization},
             required_fields: [:email]
-          }).(fb_args_without_email, %{})
+          }).(fb_args_without_email, info)
 
         refute called(TestRepo.get_or_insert!(TestUser, :_, :_))
         assert called(TestRepo.save!(TestUser.__struct__(), :_))
 
         assert called(
-                 Ecto.build_assoc(%TestUser{email: nil, id: 1, refresh_token: "refresh_token"}, :test_authorizations, %{
+                 Ecto.build_assoc(%TestUser{email: nil, id: 1}, :test_authorizations, %{
                    provider: :facebook,
                    uid: "fb_user_id"
                  })
@@ -226,7 +438,7 @@ defmodule Auth.ResolverTest do
       end
     end
 
-    test "existing user", %{fb_args_without_email: fb_args_without_email} do
+    test "existing user", %{fb_args_without_email: fb_args_without_email, info: info} do
       with_mock(TestRepo, [:passthrough],
         get_by: fn _, _ -> %TestAuthorization{provider: :facebook, uid: "fb_user_id"} end,
         preload: fn _, _ ->
@@ -240,9 +452,9 @@ defmodule Auth.ResolverTest do
         {:ok, %{current_user: current_user}} =
           Auth.Resolver.provider_auth(%{
             repo: TestRepo,
-            schemas: %{user: TestUser, auth: TestAuthorization},
+            schemas: %{user: TestUser, device: TestAuthDevice, auth: TestAuthorization},
             required_fields: [:email]
-          }).(fb_args_without_email, %{})
+          }).(fb_args_without_email, info)
 
         refute called(TestRepo.get_or_insert!(:_, :_, :_))
         refute called(Ecto.build_assoc(:_, :_, :_))
