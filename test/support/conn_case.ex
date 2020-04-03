@@ -7,6 +7,7 @@ defmodule Auth.ConnCase do
       use Phoenix.ConnTest
       import Ext.ExUnit.Assertions
       import Mock
+      import Ext.Utils.Map
       require IEx
       require Logger
     end
@@ -20,9 +21,9 @@ defmodule Auth.ConnCase do
         user = %TestUser{}
 
         {:ok,
-          conn:
-            Support.Helpers.Auth.auth_user(conn, Auth.Token.generate_and_sign!(%{"id" => user.id, "schema" => TestUser})),
-          current_user: user}
+         conn:
+           Support.Helpers.Auth.auth_user(conn, Auth.Token.generate_and_sign!(%{"id" => user.id, "schema" => TestUser})),
+         current_user: user}
 
       true ->
         {:ok, conn: conn}

@@ -31,6 +31,7 @@ defmodule Auth.MixProject do
       {:ecto_enum, "~> 1.0"},
       {:bcrypt_elixir, "~> 2.0.0"},
       {:phoenix, "~> 1.4.3", only: :test},
+      {:browser, "~> 0.4.4"}
     ]
   end
 end

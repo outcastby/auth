@@ -8,7 +8,7 @@ defmodule Auth.RestorePasswordFormTest do
   describe "invalid restored data" do
     test "user not exist", %{entity: entity} do
       %{valid?: valid?, changes: %{context: %{user: user}}, errors: [{:password, {error, _}} | _]} =
-        Auth.RestorePasswordForm.call(entity, %{repo: TestRepo, schema: TestUser})
+        Auth.RestorePasswordForm.call(entity, %{repo: TestRepo, schemas: %{user: TestUser}})
 
       assert valid? == false
       assert error == "Invalid restore hash"
@@ -25,7 +25,7 @@ defmodule Auth.RestorePasswordFormTest do
          ]}
       ] do
         %{valid?: valid?, errors: [{:password, {error, _}} | _]} =
-          Auth.RestorePasswordForm.call(entity, %{repo: TestRepo, schema: TestUser})
+          Auth.RestorePasswordForm.call(entity, %{repo: TestRepo, schemas: %{user: TestUser}})
 
         assert valid? == false
         assert error == "Invalid restore hash"
@@ -42,8 +42,7 @@ defmodule Auth.RestorePasswordFormTest do
          end
        ]}
     ] do
-
-      form = Auth.RestorePasswordForm.call(entity, %{repo: TestRepo, schema: TestUser})
+      form = Auth.RestorePasswordForm.call(entity, %{repo: TestRepo, schemas: %{user: TestUser}})
       assert form.valid? == true
     end
   end

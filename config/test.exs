@@ -6,4 +6,4 @@ config :auth, :auth,
   joken_default_exp: 900
 
 config :joken,
-       hs256: [signer_alg: "HS256", key_octet: "jwt_secret"]
+  hs256: [signer_alg: "HS256", key_octet: "jwt_secret"]
