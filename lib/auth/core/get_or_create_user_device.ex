@@ -11,7 +11,7 @@ defmodule Auth.GetOrCreateUserDevice do
       user_id,
       user_assoc,
       device_uuid,
-      prepare_data(params, user_id, user_assoc, device_data)
+      prepare_data(user_id, user_assoc, device_data)
     )
   end
 
@@ -21,10 +21,9 @@ defmodule Auth.GetOrCreateUserDevice do
   defp get_or_create_device(%{repo: repo, schemas: %{device: device_schema}}, user_id, user_assoc, device_uuid, data),
     do: repo.get_or_insert!(device_schema, %{"#{user_assoc}_id": user_id, uuid: device_uuid}, data)
 
-  defp prepare_data(params, user_id, user_assoc, nil), do: prepare_data(params, user_id, user_assoc, %{})
+  defp prepare_data(user_id, user_assoc, nil), do: prepare_data(user_id, user_assoc, %{})
 
-  defp prepare_data(%{repo: repo, schemas: %{device: device_schema}}, user_id, user_assoc, device_data) do
-    %{"#{user_assoc}_id": user_id, uuid: Ext.Utils.Repo.generate_uniq_hash(device_schema, :uuid, 30, repo)} |||
-      device_data
+  defp prepare_data(user_id, user_assoc, device_data) do
+    %{"#{user_assoc}_id": user_id, uuid: nil} ||| device_data
   end
 end
