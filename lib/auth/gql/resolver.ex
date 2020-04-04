@@ -135,6 +135,9 @@ defmodule Auth.Resolver do
 
   defp get_device(_, _, nil), do: nil
 
-  defp get_device(%{repo: repo, schemas: %{device: device_schema}}, refresh_token, device_uuid),
-    do: device_schema |> repo.get_by(%{refresh_token: refresh_token, uuid: device_uuid})
+  defp get_device(%{repo: repo, schemas: %{device: device_schema}}, refresh_token, device_uuid) do
+    device_schema |> repo.get_by(%{refresh_token: refresh_token, uuid: device_uuid})
+  rescue
+    Ecto.Query.CastError -> nil
+  end
 end

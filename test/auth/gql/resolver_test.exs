@@ -90,7 +90,7 @@ defmodule Auth.ResolverTest do
      [
        generate_uniq_hash: fn
          _, :refresh_token, _, _ -> "uniq_refresh_token_hash"
-         _, :uuid, _, _ -> "uniq_device_uuid_hash"
+         _, :uuid, _, _ -> "uniq_uuid"
          _, :restore_hash, _, _ -> "uniq_restore_hash"
        end
      ]}
@@ -153,7 +153,7 @@ defmodule Auth.ResolverTest do
         assert payload["id"] == 1
         assert current_user.email == "test@email.com"
         assert refresh_token == "uniq_refresh_token_hash"
-        assert device_uuid == "uniq_device_uuid_hash"
+        assert device_uuid == "uniq_uuid"
       end
     end
 
@@ -210,7 +210,7 @@ defmodule Auth.ResolverTest do
         assert access_token
         assert user.email == "test@email.com"
         assert refresh_token == "uniq_refresh_token_hash"
-        assert device_uuid == "uniq_device_uuid_hash"
+        assert device_uuid == "uniq_uuid"
       end
     end
 
@@ -340,7 +340,7 @@ defmodule Auth.ResolverTest do
         refute is_nil(access_token)
         assert refresh_token == "uniq_refresh_token_hash"
         assert current_user.email == "test@gmail.com"
-        assert device_uuid == "uniq_device_uuid_hash"
+        assert device_uuid == "uniq_uuid"
       end
     end
 
