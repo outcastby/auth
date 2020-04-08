@@ -3,13 +3,14 @@ defmodule Auth.SignInForm do
   use Ext.BaseForm
 
   Ext.BaseForm.schema "" do
-    field(:email, :string, virtual: true, required: true)
-    field(:password, :string, virtual: true, required: true)
+    field(:email, :string)
+    field(:password, :string)
   end
 
   def changeset(form) do
     form
     |> fetch_user()
+    |> validate_required([:email, :password])
     |> validate_user()
   end
 
@@ -25,4 +26,6 @@ defmodule Auth.SignInForm do
       do: form,
       else: add_error(form, :password, "invalid_password")
   end
+
+  defp validate_user(form), do: form
 end
