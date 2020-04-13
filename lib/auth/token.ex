@@ -11,7 +11,7 @@ defmodule Auth.Token do
   def token_config,
     do:
       default_claims(
-        default_exp: Application.get_env(Mix.Project.config()[:app], :auth)[:joken_default_exp],
+        default_exp: Application.get_env(:auth, :joken_default_exp),
         skip: [:jti, :aud, :nbf, :iss, :iat]
       )
 end

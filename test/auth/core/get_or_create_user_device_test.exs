@@ -5,7 +5,9 @@ defmodule Auth.GetOrCreateUserDeviceTest do
     {TestRepo, [:passthrough],
      [
        save!: fn struct, params -> struct ||| params ||| %{uuid: "uniq_hash"} end,
-       get_or_insert!: fn schema, query, params -> schema.__struct__ ||| %{id: 1} ||| query ||| params end
+       get_or_insert!: fn schema, query, params ->
+         schema.__struct__ ||| %{id: 1} ||| query ||| params ||| %{uuid: "device_uuid"}
+       end
      ]},
     {Ext.Utils.Repo, [:passthrough], generate_uniq_hash: fn _, _, _, _ -> "uniq_hash" end}
   ]) do
@@ -22,6 +24,7 @@ defmodule Auth.GetOrCreateUserDeviceTest do
                  %{browser: "Browser", platform: "Platform"}
                )
     end
+
     test "without device_uuid in args" do
       assert %TestAuthDevice{test_user_id: 3, browser: "Browser", platform: "Platform", uuid: "uniq_hash"} =
                Auth.GetOrCreateUserDevice.call(
