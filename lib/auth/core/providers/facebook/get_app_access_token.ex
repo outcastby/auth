@@ -5,8 +5,8 @@ defmodule Auth.Providers.Facebook.GetAppAccessToken do
   def call do
     request = %SDK.Request{
       payload: %{
-        client_id: Application.get_env(Mix.Project.config()[:app], :auth)[:facebook_client_id],
-        client_secret: Application.get_env(Mix.Project.config()[:app], :auth)[:facebook_client_secret],
+        client_id: Application.get_env(:auth, :facebook_client_id),
+        client_secret: Application.get_env(:auth, :facebook_client_secret),
         grant_type: "client_credentials"
       }
     }

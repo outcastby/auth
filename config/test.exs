@@ -1,6 +1,6 @@
 use Mix.Config
 
-config :auth, :auth,
+config :auth,
   google_client_id: "google_app_id",
   facebook_client_id: "facebook_app_id",
   joken_default_exp: 900

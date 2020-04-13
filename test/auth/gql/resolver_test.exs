@@ -216,7 +216,7 @@ defmodule Auth.ResolverTest do
 
     test "closed", %{info: info} do
       with_mocks([
-        {Application, [:passthrough], [get_env: fn :auth, :auth -> [close_sign_up: [TestUser]] end]}
+        {Application, [:passthrough], [get_env: fn :auth, :close_sign_up -> [TestUser] end]}
       ]) do
         {:error, [message: message, code: 400]} =
           Auth.Resolver.sign_up(%{repo: TestRepo, schemas: %{user: TestUser, device: TestAuthDevice}}).(%{}, info)

@@ -26,7 +26,7 @@ defmodule Auth.Providers.Google.GetUserUniqKey do
 
   defp check_aud(%{aud: aud} = google_user) do
     cond do
-      aud == Application.get_env(Mix.Project.config()[:app], :auth)[:google_client_id] -> google_user
+      aud == Application.get_env(:auth, :google_client_id) -> google_user
       true -> raise("Invalid google aud")
     end
   end

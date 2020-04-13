@@ -16,7 +16,7 @@ defmodule Auth.Providers.Facebook.GetUserUniqKey do
 
   defp check_app_id(%{app_id: app_id} = token_data) do
     cond do
-      app_id == Application.get_env(Mix.Project.config()[:app], :auth)[:facebook_client_id] -> token_data
+      app_id == Application.get_env(:auth, :facebook_client_id) -> token_data
       true -> raise("Invalid facebook app_id")
     end
   end
