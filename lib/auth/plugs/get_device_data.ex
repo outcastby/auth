@@ -21,7 +21,8 @@ defmodule Auth.Plugs.GetDeviceData do
     do: %{
       browser: Browser.name(conn),
       platform: Browser.full_platform_name(conn),
-      ip: client_ip(conn)
+      ip: client_ip(conn),
+      user_agent: __MODULE__.get_header(conn, "user-agent")
     }
 
   defp client_ip(conn) do
